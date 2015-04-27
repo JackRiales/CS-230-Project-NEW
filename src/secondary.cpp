@@ -6,18 +6,61 @@
 #include "secondary.h"
 using namespace std;
 
+void SE_Node::add(std::string type, SE_Node *&r)
+{
+    #ifdef _DEBUG_
+    printf("Adding new node with type %s.\n", type.c_str());
+    #endif
+    if (r == NULL) {
+        #ifdef _DEBUG_
+        printf("Emplacing node.\n");
+        #endif
+        r = new SE_Node(type);
+    } else {
+        if (toLowerCase(type) < toLowerCase(r->_type)) {
+            #ifdef _DEBUG_
+            printf("type %s is lower than %s. Going left.\n", toLowerCase(type).c_str(), toLowerCase(r->_type).c_str());
+            #endif
+            add(type, r->left);
+        }
+        else {
+            #ifdef _DEBUG_
+            printf("type %s is higher than %s. Going right.\n", toLowerCase(type).c_str(), toLowerCase(r->_type).c_str());
+            #endif
+            add(type, r->right);
+        }
+    }
+}
+
+bool SE_Node::write(std::ostream& out, SE_Node *r)
+{
+    #ifdef _DEBUG_
+    printf("Attempting to write node.\n");
+    #endif
+    if (r == NULL) {
+        printf("Node is null.\n");
+        return false;
+    } else {
+        #ifdef _DEBUG_
+        printf("Writing node with type %s.\n", r->_type.c_str());
+        #endif
+        out << r->_type.c_str() << '\t' << r->_duplicates << '\n';
+        write(out, r->left);
+        write(out, r->right);
+    }
+    return true;
+}
+
+// =====
+
 // Constructor
 SecondaryIndex::SecondaryIndex():
-head (new SE_Node(" ")),
-tail (new SE_Node("~")),
-_size(2)
+root(NULL),
+_size(0)
 {
     #ifdef _DEBUG_
 	printf("Instantiating a new secondary index.\n");
     #endif
-
-    head->next = tail;
-    tail->prev = head;
 }
 
 SecondaryIndex::~SecondaryIndex()
@@ -25,7 +68,8 @@ SecondaryIndex::~SecondaryIndex()
     #ifdef _DEBUG_
     printf ("Destroying secondary index.\n");
     #endif // _DEBUG_
-	kill_list();
+
+	kill_tree(root);
 }
 
 bool SecondaryIndex::update_type(std::string type)
@@ -42,38 +86,35 @@ bool SecondaryIndex::update_type(std::string type)
         #ifdef _DEBUG_
         printf ("Type %s is matched with another node. Updating duplication.\n", type.c_str());
         #endif // _DEBUG_
-        SE_Node *wp = head;
-        while (wp->next != NULL) {
-            if (toLowerCase(wp->_type) == toLowerCase(type)) {
-                wp->_duplicates++;
+        SE_Node *c = root;
+        while (c != NULL) {
+            if (toLowerCase(c->_type) == toLowerCase(type)) {
+                c->_duplicates++;
                 return true;
+            } else if (toLowerCase(c->_type) < toLowerCase(type)) {
+                c = c->left;
             } else {
-                wp = wp->next;
+                c = c->right;
             }
         }
 	} else {
         // Type not in the secondary. Add it.
-        SE_Node *wp = head;
-        while (wp->next != NULL && wp->_type < type) {
-            if (wp->next->_type > type || wp->next == tail) {
-                #ifdef _DEBUG_
-                printf ("Placing new node with type %s into secondary index.\n", type.c_str());
-                #endif // _DEBUG_
-                // Place it
-                SE_Node *_new_node = new SE_Node(type);
-                _new_node->next = wp->next;
-                _new_node->prev = wp;
-                wp->next->prev = _new_node;
-                wp->next = _new_node;
+        SE_Node *c = root;
 
-                // Increment size
-                _size++;
-
-                return true;
+        // Find correct position for new node
+        while (c != NULL) {
+            if (type < c->_type) {
+                c = c->left;
             } else {
-                wp = wp->next;
+                c = c->right;
             }
         }
+
+        // Set new node
+        c = new SE_Node(type);
+
+        // Increment size
+        _size++;
 	}
 	return true;
 }
@@ -93,18 +134,8 @@ bool SecondaryIndex::write (std::fstream& out)
 	printf ("Writing Secondary Index to output stream.\n");
     #endif // _DEBUG_
 
-	// Iterate through listing
-	SE_Node *wp = head;
-	while (wp->next != NULL) {
-		// Output; one line per listing
-		out
-		<< "\n"                     // New line
-        << wp->_type << "\t\t"      // Output the title at that list
-		<< wp->_duplicates << "\t"  // Output the duplicates at that list
-		<< "\n";
-
-        wp = wp->next;
-	}
+    // Recursively write tree
+    SE_Node::write(out, root);
 
 	// All is well
 	return true;
@@ -156,14 +187,16 @@ bool SecondaryIndex::read (BinaryData objects[], unsigned int length)
 
 bool SecondaryIndex::type_match(std::string type)
 {
-	SE_Node *wp = head;
-	while (wp->next != NULL) {
-        if (toLowerCase(wp->_type) == toLowerCase(type)) {
+	SE_Node *c = root;
+    while (c != NULL) {
+        if (toLowerCase(c->_type) == toLowerCase(type)) {
             return true;
+        } else if (toLowerCase(c->_type) < toLowerCase(type)) {
+            c = c->left;
         } else {
-            wp = wp->next;
+            c = c->right;
         }
-	}
+    }
 	#ifdef _DEBUG_
 	printf ("Type %s not found.\n", type.c_str());
 	#endif // _DEBUG_
@@ -172,23 +205,26 @@ bool SecondaryIndex::type_match(std::string type)
 
 int SecondaryIndex::duplicates_of(std::string type) {
     if (type_match(type)) {
-        SE_Node *wp = head;
-        while (wp->next != NULL) {
-            if (toLowerCase(wp->_type) == toLowerCase(type)) {
-                return wp->_duplicates;
+        SE_Node *c = root;
+        while (c != NULL) {
+            if (toLowerCase(c->_type) == toLowerCase(type)) {
+                return c->_duplicates;
+            } else if (toLowerCase(c->_type) < toLowerCase(type)) {
+                c = c->left;
+            } else {
+                c = c->right;
             }
         }
     }
     return -1;
 }
 
-void SecondaryIndex::kill_list()
+void SecondaryIndex::kill_tree(SE_Node *r)
 {
-    SE_Node *wp = head;
-    while (wp->next != NULL) {
-        wp = wp->next;
-        delete wp->prev;
+    if (r != NULL)
+    {
+        kill_tree(r->left);
+        kill_tree(r->right);
+        delete r;
     }
-    delete tail;
-    head = tail = NULL;
 }

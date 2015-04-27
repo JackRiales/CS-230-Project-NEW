@@ -26,13 +26,15 @@ class SE_Node
 {
     friend class SecondaryIndex;
     public:
-        SE_Node(): _type("0"), _duplicates(0) { next = prev = NULL; }
-        SE_Node(std::string type): _type(type), _duplicates(0) { next = prev = NULL; }
+        SE_Node(): _type("0"), _duplicates(0) { left = right = NULL; }
+        SE_Node(std::string type): _type(type), _duplicates(0) { left = right = NULL; }
+        static void add(std::string type, SE_Node *&r);
+        static bool write(std::ostream& out, SE_Node *r);
     private:
         std::string _type;
         int         _duplicates;
-        SE_Node     *next;
-        SE_Node     *prev;
+        SE_Node     *left;
+        SE_Node     *right;
 };
 
 class SecondaryIndex
@@ -84,15 +86,14 @@ class SecondaryIndex
 		*/
 
     protected:
-		void kill_list();
+		void kill_tree(SE_Node *r);
 		/**
             \name Kill List
-            \brief Kills the linked list. Should only occur at destruction time.
+            \brief Kills the bst. Should only occur at destruction time.
 		*/
 
 	private:
-		SE_Node *head;
-		SE_Node *tail;
+		SE_Node *root;
 		int     _size;
 };
 

@@ -24,18 +24,20 @@
 
 //#define _DEBUG_
 
-// Defines a node of a linked list (primary index version
+// Defines a node of a bst (primary index version)
 class P_Node
 {
     friend class PrimaryIndex;
     public:
-        P_Node(): _title("0"), _tag(0) { next = prev = NULL; }
-        P_Node(std::string title, int tag): _title(title), _tag(tag) { next = prev = NULL; }
+        P_Node(): _title("0"), _tag(0) { left = right = NULL; }
+        P_Node(std::string title, int tag): _title(title), _tag(tag) { left = right = NULL; }
+        static void add(std::string title, int key, P_Node *&r);
+        static bool write(std::ostream& out, P_Node *r);
     private:
         std::string _title;
         int         _tag;
-        P_Node      *next;
-        P_Node      *prev;
+        P_Node      *left;
+        P_Node      *right;
 };
 
 class PrimaryIndex
@@ -103,15 +105,14 @@ class PrimaryIndex
 		*/
 
     protected:
-        void kill_list();
+        void kill_tree(P_Node *r);
 		/**
-            \name Kill List
-            \brief Kills the linked list. Should only occur at destruction time.
+            \name Kill tree
+            \brief Kills the bst. Should only occur at destruction time.
 		*/
 
 	private:
-		P_Node *head;
-		P_Node *tail;
+		P_Node *root;
 		int     _size;
 };
 
