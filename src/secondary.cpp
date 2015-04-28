@@ -98,20 +98,8 @@ bool SecondaryIndex::update_type(std::string type)
             }
         }
 	} else {
-        // Type not in the secondary. Add it.
-        SE_Node *c = root;
-
-        // Find correct position for new node
-        while (c != NULL) {
-            if (type < c->_type) {
-                c = c->left;
-            } else {
-                c = c->right;
-            }
-        }
-
-        // Set new node
-        c = new SE_Node(type);
+        // Set the new node
+        SE_Node::add(type, root);
 
         // Increment size
         _size++;
@@ -191,7 +179,7 @@ bool SecondaryIndex::type_match(std::string type)
     while (c != NULL) {
         if (toLowerCase(c->_type) == toLowerCase(type)) {
             return true;
-        } else if (toLowerCase(c->_type) < toLowerCase(type)) {
+        } else if (toLowerCase(c->_type) > toLowerCase(type)) {
             c = c->left;
         } else {
             c = c->right;
@@ -209,7 +197,7 @@ int SecondaryIndex::duplicates_of(std::string type) {
         while (c != NULL) {
             if (toLowerCase(c->_type) == toLowerCase(type)) {
                 return c->_duplicates;
-            } else if (toLowerCase(c->_type) < toLowerCase(type)) {
+            } else if (toLowerCase(c->_type) > toLowerCase(type)) {
                 c = c->left;
             } else {
                 c = c->right;

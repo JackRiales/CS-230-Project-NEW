@@ -257,7 +257,7 @@ int binaryMenu()
 
 // ========================================================= //
 
-bool addRecord(BinaryData *obj, PrimaryIndex prime)
+bool addRecord(BinaryData *obj, PrimaryIndex& prime)
 {
     // Check for jumps in the array (deleted or null items with title == "0")
     for (int i = 0; i < buffer; i++) {
@@ -505,7 +505,7 @@ void listData(BinaryData obj[])
 
 // ========================================================= //
 
-void print(BinaryData *obj, PrimaryIndex prime_index, SecondaryIndex second_index)
+void print(BinaryData *obj, PrimaryIndex& prime_index, SecondaryIndex& second_index)
 {
     int selection;
     cout << "Enter a print method. (0) for \"By Title\" or (1) for \"By Type\": ";
@@ -584,7 +584,7 @@ BinaryData recordPrompt()
 
 // ========================================================= //
 
-BinaryData getByTitle(BinaryData *obj, PrimaryIndex pi)
+BinaryData getByTitle(BinaryData *obj, PrimaryIndex& pi)
 {
     // Get a title
     string input;
@@ -602,19 +602,15 @@ BinaryData getByTitle(BinaryData *obj, PrimaryIndex pi)
         return *(new BinaryData);
     }
     else {
-        // Perform linear search and get it
-        /*for (int i = 0; i < buffer; i++) {
-            if (toLowerCase(obj[i].title()) == input)
-                return obj[i];
-        }*/
-        return obj[ pi.index_of(input) ];
+        int result = pi.index_of(input);
+        return obj[result];
     }
     return *(new BinaryData);
 }
 
 // ========================================================= //
 
-BinaryData getByType(BinaryData *obj, PrimaryIndex pi, SecondaryIndex si)
+BinaryData getByType(BinaryData *obj, PrimaryIndex& pi, SecondaryIndex& si)
 {
     string input;
     cout << "Enter a type to search for: ";
